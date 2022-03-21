@@ -1,0 +1,4 @@
+*.gif !text !filter !merge !diff
+*.png !text !filter !merge !diff
+*.jpg !text !filter !merge !diff
+docs/images/* !text !filter !merge !diff
