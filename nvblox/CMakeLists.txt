@@ -59,7 +59,7 @@ add_nvblox_static_library(nvblox_gpu_hash
     src/gpu_hash/mesh_layer_specialization.cu
     src/gpu_hash/gpu_set.cu
   LINK_LIBRARIES_PUBLIC
-    stdgpu
+    nvblox_stdgpu
     nvblox_eigen
   LINK_LIBRARIES_PRIVATE
     glog::glog
@@ -186,7 +186,7 @@ include(GNUInstallDirs)
 set_target_properties(stdgpu PROPERTIES INTERFACE_LINK_LIBRARIES "")
 
 install(
-    TARGETS nvblox_lib nvblox_gpu_hash nvblox_datasets stdgpu nvblox_eigen fuse_3dmatch fuse_replica
+    TARGETS nvblox_lib nvblox_gpu_hash nvblox_datasets nvblox_stdgpu nvblox_eigen fuse_3dmatch fuse_replica
     EXPORT nvbloxTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -207,3 +207,5 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     PATTERN "*/unsupported**" EXCLUDE
 )
+install(DIRECTORY ${ext_stdgpu_SOURCE_DIR}/src/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
