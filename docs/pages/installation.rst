@@ -1,7 +1,14 @@
 Installation
 ============
 
-This page describes how to install :ref:`nvblox_torch_installation` (python) and :ref:`nvblox_installation` (c++).
+There are several ways to install ``nvblox``. See :ref:`supported_platforms_table` for a list of which methods are supported on which platforms.
+
+1. :ref:`nvblox_torch_pip_installation`. If you intend to interface with ``nvblox`` from Python, this is the recommended method.
+
+2. :ref:`nvblox_torch_source_installation`. Use this method if you intend to interface with ``nvblox`` via the C++ interface or if your platform does not support ``pip``.
+
+3. :ref:`nvblox_native_installation`. Use this method if you want to install ``nvblox`` outside our provided docker environment.
+
 
 .. _supported_platforms:
 
@@ -12,14 +19,15 @@ Supported Platforms
 
 The following platforms are supported:
 
-+-------------------+-------------+----------------+
-|                   | x86 + dGPU  | Jetson (ARM64) |
-+===================+=============+================+
-| ``nvblox_torch``  | ✅          | ❌             |
-+-------------------+-------------+----------------+
-| ``nvblox``        | ✅          | ✅             |
-+-------------------+-------------+----------------+
-
++------------------------+-------------+----------------+-------------+
+|                        | x86 + dGPU  | JetPack 6.X    | JetPack 5.X |
++========================+=============+================+=============+
+| ``nvblox_torch (pip)`` | ✅          | ❌             | ❌          |
++------------------------+-------------+----------------+-------------+
+| ``nvblox_torch (src)`` | ✅          | ✅             | ❌          |
++------------------------+-------------+----------------+-------------+
+| ``nvblox C++ (src)``   | ✅          | ✅             | ✅          |
++------------------------+-------------+----------------+-------------+
 
 We support the systems with the following configurations:
 
@@ -37,24 +45,9 @@ See the support table `here <https://docs.nvidia.com/cuda/cuda-toolkit-release-n
 to find the minimum driver version for your platform.
 
 
-.. _nvblox_torch_installation:
-
-``nvblox_torch``
-----------------
-
-There are two ways to install ``nvblox_torch``:
-
-1. :ref:`nvblox_torch_pip_installation`
-2. :ref:`nvblox_torch_source_installation`
-
-``pip`` is the preferred way to install ``nvblox_torch`` on :ref:`supported_platforms`.
-Source installation is only recommended for developers who need to modify ``nvblox_torch``
-or for platforms that are not supported via ``pip``.
-
-
 .. _nvblox_torch_pip_installation:
 
-Install ``nvblox_torch`` via ``pip``
+Install ``nvblox`` via ``pip``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :nvblox_torch_pip_install_code_block:
@@ -71,12 +64,16 @@ You're all set! You can now run the :doc:`torch_examples_reconstruction` example
 
 .. _nvblox_torch_source_installation:
 
-Install ``nvblox_torch`` from Source (in Docker)
+Install ``nvblox`` from Source (in Docker)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The source installation is recommended for developers who need to modify ``nvblox_torch``
+The source installation is recommended for developers who need to modify ``nvblox``
 or for platforms that are not supported via ``pip``.
 We provide a docker image for building and developing inside.
+
+
+Build the C++ library
+^^^^^^^^^^^^^^^^^^^^^
 
 First clone the repository:
 
@@ -89,61 +86,10 @@ Then build and run the docker container:
     cd nvblox
     ./docker/run_docker.sh
 
-To build the c++ library run
-
-.. code-block:: bash
-
-    mkdir -p /workspaces/nvblox/build
-    cd /workspaces/nvblox/build
-    cmake ..
-    make -j${nproc}
-
-To install nvblox_torch in development/editable mode run
-
-.. code-block:: bash
-
-    cd /workspaces/nvblox/nvblox_torch
-    pip3 install -e .
-
-(Optional) You can verify the installation by running our tests:
-
-.. code-block:: bash
-
-    cd /workspaces/nvblox/nvblox_torch
-    pytest -s
-
-You're all set! You can now :doc:`torch_examples_reconstruction`.
-
-
-.. _nvblox_installation:
-
-``nvblox``
-----------
-
-We support two installation methods for building the ``nvblox`` c++ library:
-
-1. :ref:`nvblox_docker_installation` (recommended)
-2. :ref:`nvblox_native_installation`
-
-After installing either way, you're ready to :doc:`core_library_run_an_example`.
-
-.. _nvblox_docker_installation:
-
-Install ``nvblox`` from Source (in Docker)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The steps to build ``nvblox`` in the development container are the same as the
-instructions in :ref:`nvblox_torch_source_installation`.
-``nvblox`` is built inside our development container as the first part of
-installing ``nvblox_torch``.
-
-One difference is that on Jetson platforms we need to disable building of the ``pytorch`` wrapper,
-which is (currently) only supported on x86 platforms. Also note that the Jetson docker build only
-supports Jetpack 6.2. The modified (jetson) and unmodified (x86) building commands are:
+To build the library run
 
 .. tabs::
-
-    .. tab:: x86
+    .. tab:: x86, JetPack 6
 
         .. code-block:: bash
 
@@ -152,23 +98,42 @@ supports Jetpack 6.2. The modified (jetson) and unmodified (x86) building comman
             cmake ..
             make -j${nproc}
 
-    .. tab:: Jetson (ARM64)
+    .. tab:: JetPack 5
 
-        .. code-block:: bash
+           .. code-block:: bash
 
             mkdir -p /workspaces/nvblox/build
             cd /workspaces/nvblox/build
             cmake .. -DBUILD_PYTORCH_WRAPPER=0
             make -j${nproc}
 
-(Optional) To confirm building was a success, run the tests:
+(Optional) You can verify the installation by running our tests:
 
 .. code-block:: bash
 
-    cd nvblox
-    ctest
+    ctest --test-dir /workspaces/nvblox/build/nvblox
 
-You're now ready to  :doc:`core_library_run_an_example`.
+
+Install ``nvblox_torch`` python package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On supported platforms, install the  ``nvblox_torch`` Python library that was built during the previous step:
+
+.. code-block:: bash
+
+    cd /workspaces/nvblox/nvblox_torch
+    pip3 install --editable .
+
+(Optional) You can verify the installation by running our tests:
+
+.. code-block:: bash
+
+    pytest -s /workspaces/nvblox/nvblox_torch
+
+You're all set! Feel free to proceed with one of the following examples:
+
+- :doc:`torch_examples_reconstruction` in Python
+- :doc:`core_library_run_an_example` from the C++ library.
 
 
 .. _nvblox_native_installation:
@@ -181,7 +146,7 @@ of our development container.
 
 .. note::
 
-    We recommend using the :ref:`nvblox_docker_installation` as it will handle all the
+    We recommend using the :ref:`nvblox_torch_source_installation` as it will handle all the
     dependencies for you.
     The docker image sets up a controlled environment in which we know things work.
     While we've tested the following instructions on many systems
@@ -199,8 +164,10 @@ We provide a script to add the relevant repositories and install a more recent
 version in: ``docker/install_cmake.sh``.
 Note that running this script will replace any previously installed version of ``cmake``.
 
-Now follow the instructions in :ref:`nvblox_docker_installation`
+Now follow the instructions in :ref:`nvblox_torch_source_installation`
 to build the code and run the tests.
+
+If you are using a Jetson and want to use the ``pytorch`` wrapper, you will need to install the CUDA-enabled versions of ``torch`` and ``torchvision``. See `this page <https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html>`_ for more details.
 
 You're now ready to  :doc:`core_library_run_an_example`.
 

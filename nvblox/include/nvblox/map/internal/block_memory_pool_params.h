@@ -44,4 +44,4 @@ struct BlockMemoryPoolParams {
   Param<float> expansion_factor{kExpansionFactor};
 };
 
-} // namespace nvblox
+}  // namespace nvblox

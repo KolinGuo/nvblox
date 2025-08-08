@@ -50,13 +50,21 @@ set(TORCH_CUDA_ARCH_LIST "")
 # Loop through each number in the list
 foreach(ARCH IN LISTS CMAKE_CUDA_ARCHITECTURES)
 
-  # Extract the first and second characters
+  # The numbers can be 2-3 digits, e.g. 90 -> 9.0 or 120 -> 1.20
+  string(LENGTH "${ARCH}" num_digits)
+
   string(SUBSTRING "${ARCH}" 0 1 FIRST_DIGIT)
   string(SUBSTRING "${ARCH}" 1 1 SECOND_DIGIT)
-
-  # Concatenate with a dot in between
-  set(DOT_SEPARATED "${FIRST_DIGIT}.${SECOND_DIGIT}")
-
+  if(num_digits EQUAL 2)
+    set(DOT_SEPARATED "${FIRST_DIGIT}.${SECOND_DIGIT}")
+  else()
+    # Currently, Caffe2 only support Cuda architectues up to 9.0
+    message(
+      WARNING
+        "Cuda architecture ${ARCH} not supported for nvblox_torch. Reverting to 9.0 and hoping for backward compatibility"
+    )
+    set(DOT_SEPARATED "9.0")
+  endif()
   # Append to the result list
   list(APPEND TORCH_CUDA_ARCH_LIST "${DOT_SEPARATED}")
 endforeach()
@@ -67,7 +75,12 @@ set(CUDA_ARCH_LIST "")
 foreach(ARCH IN LISTS CMAKE_CUDA_ARCHITECTURES)
   list(APPEND CUDA_ARCH_LIST "${ARCH}0")
 endforeach()
+
 # Architectures are required to be in ascending order
-list(SORT CUDA_ARCH_LIST)
+list(SORT CUDA_ARCH_LIST COMPARE NATURAL)
+
 # Join the list into a comma-separated string
 string(JOIN "," CUDA_ARCH_LIST ${CUDA_ARCH_LIST})
+
+message(STATUS "CUDA_ARCH_LIST ${CUDA_ARCH_LIST}")
+message(STATUS "TORCH_CUDA_ARCH_LIST: ${TORCH_CUDA_ARCH_LIST}")

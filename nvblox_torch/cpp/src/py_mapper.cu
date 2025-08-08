@@ -74,7 +74,7 @@ long Mapper::getNumMappers() const { return mappers_.size(); }
 
 std::shared_ptr<nvblox::Mapper> Mapper::getNvbloxMapper(long mapper_id) {
   CHECK_GE(mapper_id, 0);
-  CHECK_LT(mapper_id, mappers_.size());
+  CHECK_LT(mapper_id, static_cast<long>(mappers_.size()));
   return mappers_[mapper_id];
 }
 

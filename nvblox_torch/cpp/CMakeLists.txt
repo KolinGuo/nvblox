@@ -14,6 +14,11 @@ set(CMAKE_CUDA_ARCHITECTURES_OLD ${CMAKE_CUDA_ARCHITECTURES})
 find_package(Torch REQUIRED)
 set(CMAKE_CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES_OLD})
 
+# On Jetson, we need to link explicitly against cudnn
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+  list(APPEND TORCH_LIBRARIES cudnn)
+endif()
+
 # Nvblox-torch python wrapper
 add_nvblox_shared_library(
   py_nvblox

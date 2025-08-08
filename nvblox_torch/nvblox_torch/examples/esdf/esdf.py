@@ -101,7 +101,7 @@ def set_initial_viewpoint(visualizer: o3d.visualization.Visualizer) -> None:
     """Sets this example's inital viewpoint from file."""
     ctr = visualizer.get_view_control()
     assert os.path.isfile(VIEWPOINT_FILE_PATH), 'Viewpoint file not found'
-    param = o3d.io.read_pinhole_camera_parameters(VIEWPOINT_FILE_PATH)
+    param = o3d.io.read_pinhole_camera_parameters(str(VIEWPOINT_FILE_PATH))
     ctr.convert_from_pinhole_camera_parameters(param, allow_arbitrary=True)
 
 

@@ -33,8 +33,8 @@ def nvblox_torch_pip_install_code_block(app: Sphinx, _: Any, source: List[str]) 
         wheel_name_ubuntu_22_cuda_11 = app.config.nvblox_torch_docs_config[
             'wheel_name_ubuntu_22_cuda_11']
         if release_state:
-            # The default install target is CUDA 12.8 and is under nvblox_torch
-            pip_install_target_ubuntu_24_cuda_12 = 'nvblox_torch'
+            pip_install_target_ubuntu_24_cuda_12 = \
+                f'{external_wheel_base_url}/{wheel_name_ubuntu_24_cuda_12}'
             pip_install_target_ubuntu_22_cuda_12 = \
                 f'{external_wheel_base_url}/{wheel_name_ubuntu_22_cuda_12}'
             pip_install_target_ubuntu_22_cuda_11 = \
@@ -115,8 +115,8 @@ Download an example SUN3D dataset by running the following command:
 
 .. code-block:: bash
 
-    wget http://vision.princeton.edu/projects/2016/3DMatch/downloads/rgbd-datasets/sun3d-mit_76_studyroom-76-1studyroom2.zip
-    unzip sun3d-mit_76_studyroom-76-1studyroom2.zip
+    wget https://huggingface.co/datasets/nvidia/nvblox/resolve/main/sun3d-mit_76_studyroom-76-1studyroom2.tar.gz
+    tar -xvf sun3d-mit_76_studyroom-76-1studyroom2.tar.gz
 
 """
 
