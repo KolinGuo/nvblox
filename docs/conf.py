@@ -13,6 +13,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 
+import datetime
 from typing import List
 import os
 import sys
@@ -20,7 +21,11 @@ import sys
 # Modify PYTHONPATH so we can obtain the version data from setup module.
 # pylint: disable=wrong-import-position
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'nvblox_torch')))
-from setup import NVBLOX_VERSION, NVBLOX_VERSION_NUMBER
+from setup import NVBLOX_VERSION_NUMBER
+
+# Modify PYTHONPATH so we can import the helpers module.
+sys.path.insert(0, os.path.abspath('.'))
+from helpers import TemporaryLinkcheckIgnore, to_datetime, is_expired
 
 # NOTE(alexmillane, 2025-04-24): This file is in a seperate folder to avoid
 # duplicate configuration errors coming from mypy. The only way I could find
@@ -121,6 +126,25 @@ linkcheck_ignore = [
     r'pages/torch_examples_.*\.html',    # Ignore all pages/torch_examples_*.html links
 ]
 
+temporary_linkcheck_ignore = [
+    TemporaryLinkcheckIgnore(
+        url='https://3dmatch.cs.princeton.edu/',
+        start_date=to_datetime('09.07.2025'),
+        days=14,
+    ),
+    TemporaryLinkcheckIgnore(
+        url='https://sun3d.cs.princeton.edu/',
+        start_date=to_datetime('09.07.2025'),
+        days=14,
+    ),
+]
+
+for ignore in temporary_linkcheck_ignore:
+    if not is_expired(ignore.start_date, ignore.days):
+        print(f'Ignoring {ignore.url} until '
+              f'{ignore.start_date + datetime.timedelta(days=ignore.days)}')
+        linkcheck_ignore.append(ignore.url)
+
 #####################################
 #  Macros dependent on release state
 #####################################
@@ -130,13 +154,13 @@ nvblox_torch_docs_config = {
     'internal_wheel_base_url': 'https://urm.nvidia.com/artifactory/hw-nvblox-alpine-local/' + \
         'pypi/release/nvblox_torch/',
     'external_wheel_base_url': 'https://github.com/nvidia-isaac/nvblox/releases' + \
-        f'/download/v{NVBLOX_VERSION}',
+        f'/download/v{NVBLOX_VERSION_NUMBER}',
     'wheel_name_ubuntu_24_cuda_12': \
-        'nvblox_torch-0.0.8rc3+cu12ubuntu24-851-py3-none-linux_x86_64.whl',
+        'nvblox_torch-0.0.8rc5+cu12ubuntu24-863-py3-none-linux_x86_64.whl',
     'wheel_name_ubuntu_22_cuda_12': \
-        'nvblox_torch-0.0.8rc3+cu12ubuntu22-851-py3-none-linux_x86_64.whl',
+        'nvblox_torch-0.0.8rc5+cu12ubuntu22-863-py3-none-linux_x86_64.whl',
     'wheel_name_ubuntu_22_cuda_11': \
-        'nvblox_torch-0.0.8rc3+cu11ubuntu22-1user-py3-none-linux_x86_64.whl',
+        'nvblox_torch-0.0.8rc5+cu11ubuntu22-863-py3-none-linux_x86_64.whl',
     'internal_git_url': 'ssh://git@gitlab-master.nvidia.com:12051/nvblox/nvblox.git',
     'external_git_url': 'git@github.com:nvidia-isaac/nvblox.git',
     'internal_code_link_base_url': 'https://gitlab-master.nvidia.com/nvblox/nvblox/-/tree/main',

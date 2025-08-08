@@ -25,9 +25,10 @@ RUN . /opt/venv/bin/activate && \
         pyrealsense2 \
         rerun-sdk
 
-### Install PyCuVSLAM
+### Install PyCuVSLAM. We support pre v0.2
 RUN git clone https://github.com/NVlabs/pycuvslam.git /pycuvslam && \
     . /opt/venv/bin/activate && \
     pip install --upgrade pip && \
-    cd /pycuvslam && git lfs install && pip install  cuvslam/x86 && \
+    cd /pycuvslam && git checkout 3ac37364f00421e3c580dfeb489a8be85f3875a1 && \
+    git lfs install && pip install  cuvslam/x86 && \
     rm -rf /pycuvslam
