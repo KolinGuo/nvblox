@@ -440,33 +440,31 @@ TYPED_TEST(FreespaceIntegratorTest, CheckNeighbohood) {
                    .is_high_confidence_freespace);
 }
 
-TEST_F(FreespaceIntegratorTest, InitializeToHighConfidenceFreespace) {
+TYPED_TEST(FreespaceIntegratorTest, InitializeToHighConfidenceFreespace) {
   // We create a scene that is a flat plane 4 meters from the origin.
   constexpr float kPlaneDistance = 4.0f;
-  scene_.addPrimitive(std::make_unique<primitives::Plane>(
+  this->scene_.addPrimitive(std::make_unique<primitives::Plane>(
       Vector3f(kPlaneDistance, 0.0, 0.0), Vector3f(-1, 0, 0)));
 
   // Create a pose at the origin looking forward.
-  Eigen::Quaternionf rotation_base(0.5, 0.5, 0.5, 0.5);
-  Transform T_L_C = Transform::Identity();
-  T_L_C.prerotate(rotation_base);
+  Transform T_L_C = test_utils::getSensorTLC<TypeParam>();
 
   // Generate a depth frame
-  DepthImage depth_frame(camera_.height(), camera_.width(),
+  DepthImage depth_frame(this->sensor().height(), this->sensor().width(),
                          MemoryType::kUnified);
   // Make sure the full plane is visible.
   const float depth_image_max_distance_m = 2.0f * kPlaneDistance;
-  scene_.generateDepthImageFromScene(camera_, T_L_C, depth_image_max_distance_m,
-                                     &depth_frame);
+  this->scene_.generateDepthImageFromScene(
+      this->sensor(), T_L_C, depth_image_max_distance_m, &depth_frame);
 
   // Layers
-  FreespaceLayer freespace_layer(voxel_size_m_, MemoryType::kUnified);
-  TsdfLayer tsdf_layer(voxel_size_m_, MemoryType::kUnified);
+  FreespaceLayer freespace_layer(this->voxel_size_m_, MemoryType::kUnified);
+  TsdfLayer tsdf_layer(this->voxel_size_m_, MemoryType::kUnified);
 
   // Setup Tsdf integrator
   ProjectiveTsdfIntegrator tsdf_integrator;
   constexpr float kTruncationDistVox = 4;
-  const float truncation_distance_m = kTruncationDistVox * voxel_size_m_;
+  const float truncation_distance_m = kTruncationDistVox * this->voxel_size_m_;
   // We choose an integration distance smaller than the distance to the plane to
   // allocate only freespace for now.
   const float max_integration_distance_m =
@@ -483,8 +481,8 @@ TEST_F(FreespaceIntegratorTest, InitializeToHighConfidenceFreespace) {
   const Time start_time_ms{100};
   tsdf_integrator.integrateFrame(
       MaskedDepthImageConstView(depth_frame, kMaskActiveEverywhere), T_L_C,
-      camera_, &tsdf_layer, &updated_blocks);
-  freespace_integrator.updateFreespaceLayer<Camera>(
+      this->sensor(), &tsdf_layer, &updated_blocks);
+  freespace_integrator.updateFreespaceLayer<TypeParam>(
       updated_blocks, start_time_ms, tsdf_layer, {}, &freespace_layer);
 
   // Check all voxels are initialized to high confidence freespace
