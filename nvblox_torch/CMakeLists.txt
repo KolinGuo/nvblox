@@ -75,13 +75,26 @@ endif()
 add_subdirectory(cpp)
 
 # Installation rules for scikit-build-core
-# Install py_nvblox library to nvblox_torch/cpp/
-install(TARGETS py_nvblox
-  LIBRARY DESTINATION nvblox_torch/cpp
-  RUNTIME DESTINATION nvblox_torch/cpp
+# The wheel.install-dir in pyproject.toml is set to "nvblox_torch/lib"
+# So CMake destinations are relative to that path in the final wheel.
+
+# Set install RPATH for py_nvblox to find nvblox_lib at runtime
+# The libraries are installed as:
+#   nvblox_torch/lib/cpp/libpy_nvblox.so
+#   nvblox_torch/lib/nvblox/libnvblox_lib.so
+# So the relative path from cpp/ to nvblox/ is ../nvblox
+set_target_properties(py_nvblox PROPERTIES
+  INSTALL_RPATH "$ORIGIN/../nvblox"
+  BUILD_WITH_INSTALL_RPATH FALSE
 )
 
-# Install nvblox_lib to nvblox/
+# Install py_nvblox library to cpp/ (becomes nvblox_torch/lib/cpp/ in wheel)
+install(TARGETS py_nvblox
+  LIBRARY DESTINATION cpp
+  RUNTIME DESTINATION cpp
+)
+
+# Install nvblox_lib to nvblox/ (becomes nvblox_torch/lib/nvblox/ in wheel)
 install(TARGETS nvblox_lib
   LIBRARY DESTINATION nvblox
   RUNTIME DESTINATION nvblox

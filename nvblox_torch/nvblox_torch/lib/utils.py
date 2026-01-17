@@ -11,23 +11,36 @@
 from typing import Any
 import os
 import glob
+import importlib.util
 
 import torch
 
 
-# get paths
+def get_package_root() -> str:
+    """Get the root path of the installed nvblox_torch package.
+
+    This uses importlib to reliably find the package location whether
+    installed via wheel, editable install, or run from source.
+    """
+    spec = importlib.util.find_spec('nvblox_torch')
+    if spec is not None and spec.origin is not None:
+        # spec.origin is the path to __init__.py
+        return os.path.dirname(os.path.abspath(spec.origin))
+    # Fallback: derive from this file's location (utils.py is in lib/)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def get_module_path() -> str:
-    """Get the path to the nvblox_torch module."""
-    path = os.path.dirname(__file__)
-    return path
+    """Get the path to the nvblox_torch/lib module (where utils.py lives)."""
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def get_nvblox_py_library_path() -> str:
     """Get the path to the nvblox_torch .so library.
 
     This function searches for the library in multiple locations to support:
-    1. Installed packages (library in lib/nvblox_torch/cpp/)
-    2. In-place/editable builds (library in lib/nvblox_torch/cpp/)
+    1. Wheel-installed packages (pip install or pip install git+...)
+    2. In-place/editable builds (pip install -e .)
     3. Build directory layouts
 
     Returns:
@@ -36,20 +49,23 @@ def get_nvblox_py_library_path() -> str:
     Raises:
         FileNotFoundError: If the library cannot be found in any location
     """
-    module_path = get_module_path()
+    package_root = get_package_root()
 
     # List of possible library locations (in order of preference)
+    # package_root is the nvblox_torch package directory (site-packages/nvblox_torch/)
     possible_paths = [
-        # Standard installed/in-place location
-        os.path.join(module_path, 'nvblox_torch/cpp/libpy_nvblox.so'),
-        # Alternative paths for different build configurations
-        os.path.join(module_path, 'nvblox_torch', 'cpp', 'libpy_nvblox.so'),
-        # Direct path (for cases where lib/ is the library directory)
-        os.path.join(module_path, 'libpy_nvblox.so'),
+        # Primary path for wheel installs: <package>/lib/cpp/
+        os.path.join(package_root, 'lib', 'cpp', 'libpy_nvblox.so'),
+        # Legacy path for backward compatibility: <package>/lib/nvblox_torch/cpp/
+        os.path.join(package_root, 'lib', 'nvblox_torch', 'cpp', 'libpy_nvblox.so'),
+        # Direct path in lib/
+        os.path.join(package_root, 'lib', 'libpy_nvblox.so'),
     ]
 
     # Also check for libraries in build directories relative to the source
-    source_root = os.path.dirname(os.path.dirname(module_path))
+    # This handles cases where the package is run from source without install
+    # For source trees, package_root is nvblox_torch/nvblox_torch/, so go up one more level
+    source_root = os.path.dirname(package_root)
     build_patterns = [
         os.path.join(source_root, 'build', '**', 'libpy_nvblox.so'),
         os.path.join(source_root, 'build', '**', 'cpp', 'libpy_nvblox.so'),
@@ -71,7 +87,12 @@ def get_nvblox_py_library_path() -> str:
     search_locations = '\n  - '.join(possible_paths + build_patterns)
     raise FileNotFoundError(
         f"Could not find libpy_nvblox.so. Searched in:\n  - {search_locations}\n"
-        "Please ensure the package is built. For in-place builds, run:\n"
+        f"Package root: {package_root}\n"
+        "Please ensure the package is built. For wheel installs, run:\n"
+        "  pip install .\n"
+        "For installation from git:\n"
+        "  pip install git+https://github.com/<org>/<repo>.git#subdirectory=nvblox_torch\n"
+        "For editable/in-place builds:\n"
         "  pip install -e .\n"
         "Or build with CMake:\n"
         "  mkdir build && cd build && cmake .. && make"

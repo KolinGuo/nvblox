@@ -49,18 +49,19 @@ cmake.args = ["-DBUILD_TESTING=OFF", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
 editable.mode = "redirect"
 editable.rebuild = true
 
-# Specify which files to include in sdist
+# Specify which files to include in sdist for building from source
+# Note: When installing from git with #subdirectory=nvblox_torch, the parent
+# directories (cmake/, nvblox/) are available since the whole repo is cloned.
 sdist.include = [
   "nvblox_torch/**/*.py",
-  "nvblox_torch/lib/**/*.so",
   "cpp/**/*",
   "CMakeLists.txt",
-  "../cmake/**/*",
-  "../nvblox/**/*",
+  "setup.py",
+  "MANIFEST.in",
 ]
 
-[tool.scikit-build.cmake.define]
-BUILD_TESTING = "OFF"
+# Exclude pre-built binaries from sdist (they should be built during install)
+sdist.exclude = ["nvblox_torch/lib/**/*.so", "build/**"]
 
 # Dynamic version using regex from _version.py
 [tool.scikit-build.metadata.version]

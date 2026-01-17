@@ -38,11 +38,22 @@ add_nvblox_shared_library(
   ${TORCH_LIBRARIES}
   LINK_LIBRARIES_PRIVATE
   nvblox_stdgpu
-  nvblox_gpu_hash
   INCLUDE_DIRECTORIES_PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+
+# Use whole-archive linking for nvblox_gpu_hash to ensure all template instantiations
+# (like GPULayerView<OccupancyBlock>) are included in the final shared library.
+# Without this, only directly referenced symbols would be pulled from the static library,
+# causing undefined symbol errors at runtime.
+# Ensure nvblox_gpu_hash is built before py_nvblox
+add_dependencies(py_nvblox nvblox_gpu_hash)
+target_link_libraries(py_nvblox PRIVATE
+  -Wl,--whole-archive
+  $<TARGET_FILE:nvblox_gpu_hash>
+  -Wl,--no-whole-archive
+)
 
 # Nvblox-torch python wrapper
 add_nvblox_shared_library(
@@ -58,9 +69,14 @@ add_nvblox_shared_library(
   ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 # For in-place/editable builds, set output directory and copy libraries
+# This mirrors the wheel install structure where libraries go to:
+# - nvblox_torch/lib/cpp/libpy_nvblox.so
+# - nvblox_torch/lib/nvblox/libnvblox_lib.so
 if(DEFINED INPLACE_LIB_DIR)
   set_target_properties(py_nvblox PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${INPLACE_LIB_DIR}/nvblox_torch/cpp
+    LIBRARY_OUTPUT_DIRECTORY ${INPLACE_LIB_DIR}/cpp
+    # Set RPATH to find nvblox_lib in ../nvblox relative to lib/cpp/
+    BUILD_RPATH "$ORIGIN/../nvblox"
   )
 
   # Copy nvblox_lib to the expected location after build
