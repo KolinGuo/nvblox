@@ -1,6 +1,7 @@
 [project]
 name = "nvblox_torch"
 description = "Pytorch interface for nvblox"
+requires-python = ">=3.10"
 
 # Version is dynamically determined in setup.py
 dynamic = ["version"]
