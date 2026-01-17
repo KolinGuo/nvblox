@@ -1,0 +1,173 @@
+# Copyright 2024-2025 Kolin Guo. All rights reserved.
+#
+# No part of this software may be used, reproduced, distributed, sold, or transmitted
+# in any form or by any means, including photocopying, recording, or other electronic
+# or mechanical methods, without the prior written permission of the author,
+# except in the case of brief quotations embodied in critical reviews.
+#
+# Author: Kolin Guo <guokolin@gmail.com>
+#
+# Version: 0.1.4
+# Last modified: 2025-10-30
+name: compose_base
+
+services:
+  base:
+    # entrypoint: ["/bin/bash", "-c"]
+    command: ["/bin/bash"]
+    environment:
+      PYTHONUNBUFFERED: 1 # Unbuffered Python stdout/stderr
+      SSH_AUTH_SOCK: ${SSH_AUTH_SOCK} # ssh agent
+    volumes:
+      - "/etc/localtime:/etc/localtime:ro" # Local time
+      - ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK} # ssh agent
+    network_mode: host # Use host network
+    ipc: host # Use host IPC namespace (shared memory)
+    pid: host # Use host PID namespace (process)
+    privileged: true # Give extended privileges to the container, potentially dangerous
+    tty: true # Get colored output when `docker compose up`
+    labels:
+      org.dexmate.compose.type: "base"
+    build:
+      ssh: ["default"] # mount the default ssh agent, use as `RUN --mount=type=ssh git clone ...`
+      labels:
+        org.dexmate.description: "Dexmate Inc. Docker Compose Base"
+        org.dexmate.maintainer: "Kolin Guo <kolin.guo@dexmate.ai>"
+      network: host # Use host network during build
+
+  gui: &gui
+    extends:
+      service: base
+    environment:
+      DISPLAY: $DISPLAY # Specify the host, graphics controller and display for X
+      XAUTHORITY: $XAUTHORITY # File containing X privilege tokens used by `xauth`
+      XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR} # XDG directory for user-specific runtime files
+      DBUS_SESSION_BUS_ADDRESS: ${DBUS_SESSION_BUS_ADDRESS} # GUI apps with inter-process communication
+      QT_X11_NO_MITSHM: 1 # Disable MIT-SHM X11 extension for Qt applications
+      # Audio IO
+      PULSE_SERVER: "unix:${XDG_RUNTIME_DIR}/pulse/native" # PulseAudio server socket path
+    volumes:
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw" # For X server communication
+      - ${XDG_RUNTIME_DIR}/bus:${XDG_RUNTIME_DIR}/bus # GUI apps with inter-process communication
+      - ${XDG_RUNTIME_DIR}/dbus-1:${XDG_RUNTIME_DIR}/dbus-1 # GUI apps with inter-process communication
+      - ${XDG_RUNTIME_DIR}/gdm:${XDG_RUNTIME_DIR}/gdm # GNOME Display Manager runtime files (i.e., Xauthority)
+      - ${XDG_RUNTIME_DIR}/ICEauthority:${XDG_RUNTIME_DIR}/ICEauthority # X Inter-Client Exchange authentication
+      # Audio IO
+      - "${XDG_RUNTIME_DIR}/pulse:${XDG_RUNTIME_DIR}/pulse" # PulseAudio server runtime files (i.e., socket/pid)
+      - "${HOME}/.config/pulse/cookie:/home/ros/.config/pulse/cookie" # PulseAudio server cookie for authentication
+    labels:
+      org.dexmate.compose.type: "gui"
+
+  gpu: &gpu
+    extends:
+      service: base
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    labels:
+      org.dexmate.compose.type: "gpu"
+
+  gpu-gui:
+    extends:
+      service: gpu
+    <<: *gui
+    labels:
+      org.dexmate.compose.type: "gpu-gui"
+
+  ros: &ros
+    extends:
+      service: base
+    environment:
+      ROS_DOMAIN_ID: "FIXME" # ROS domain id (on Linux: 21-101, 215-232)
+      ROS_LOCALHOST_ONLY: 0 # Turn off localhost only
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+      FASTRTPS_DEFAULT_PROFILES_FILE: /fastrtps_profile.xml
+      RMW_FASTRTPS_USE_QOS_FROM_XML: 1
+    volumes:
+      - "${HOME}/.ros/fastrtps_profile.xml:/fastrtps_profile.xml:ro" # for IP whitelist
+    labels:
+      org.dexmate.compose.type: "ros"
+
+  ros-gui:
+    extends:
+      service: ros
+    <<: *gui
+    labels:
+      org.dexmate.compose.type: "ros-gui"
+
+  ros-gpu:
+    extends:
+      service: ros
+    <<: *gpu
+    labels:
+      org.dexmate.compose.type: "ros-gpu"
+
+  ros-gpu-gui:
+    extends:
+      service: gpu-gui
+    <<: *ros
+    labels:
+      org.dexmate.compose.type: "ros-gpu-gui"
+
+  # Safe alternatives (--privileged=false)
+  base-safe: &safe
+    extends:
+      service: base
+    privileged: false # DO NOT give extended privileges to the container
+    labels:
+      org.dexmate.compose.type: "base-safe"
+
+  gui-safe:
+    extends:
+      service: gui
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "gui-safe"
+
+  gpu-safe:
+    extends:
+      service: gpu
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "gpu-safe"
+
+  gpu-gui-safe:
+    extends:
+      service: gpu-gui
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "gpu-gui-safe"
+
+  ros-safe:
+    extends:
+      service: ros
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "ros-safe"
+
+  ros-gui-safe:
+    extends:
+      service: ros-gui
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "ros-gui-safe"
+
+  ros-gpu-safe:
+    extends:
+      service: ros-gpu
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "ros-gpu-safe"
+
+  ros-gpu-gui-safe:
+    extends:
+      service: ros-gpu-gui
+    <<: *safe
+    labels:
+      org.dexmate.compose.type: "ros-gpu-gui-safe"

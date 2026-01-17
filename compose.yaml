@@ -1,0 +1,15 @@
+name: nvblox
+
+services:
+  base:
+    extends:
+      file: compose_base.yaml
+      service: gpu-gui
+    working_dir: /workspace/nvblox_torch
+    entrypoint: ["/bin/bash", "-c"]
+    volumes:
+      - ".:/workspace"
+    image: nvblox:build
+    container_name: nvblox_build
+    build:
+      dockerfile: ./docker/Dockerfile
