@@ -1,10 +1,12 @@
+[build-system]
+requires = ["scikit_build_core>=0.8.0", "setuptools>=61.0", "torch>=2.4"]
+build-backend = "scikit_build_core.build"
+
 [project]
 name = "nvblox_torch"
 description = "Pytorch interface for nvblox"
 requires-python = ">=3.10"
-
-# Version is dynamically determined in setup.py
-dynamic = ["version"]
+dynamic = ["version"] # Version is dynamically determined
 dependencies = [
   "transforms3d>=0.4.2",
   "imageio>=2.35.0",
@@ -19,20 +21,69 @@ dependencies = [
   # * On Jetson, the pypi version does not support CUDA. we instead rely on CUDA-enabled versions being pre-installed on the system.
   #   These are specified in Dockerfile.jetson_deps. In order for these ones to not be overridden here, the version specifications
   #   below has to encompass the pre-installed versions
-  "torch==2.*",  # 2.3.0 for jetson and 2.4 for x86.
+  "torch",       # 2.3.0 for jetson and 2.4 for x86.
   "torchvision", # 0.18.0a0+6043bc2 for jetson and 0.19 for x86.
   "matplotlib",
 ]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+[tool.scikit-build]
+# Minimum CMake version required
+cmake.version = ">=3.22.1"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["nvblox_torch*"]
+# Build type
+cmake.build-type = "RelWithDebInfo"
+
+# Python package to include
+wheel.packages = ["nvblox_torch"]
+
+# Where to install CMake-built artifacts within the wheel
+wheel.install-dir = "nvblox_torch/lib"
+
+# Build directory (relative to source)
+build-dir = "build/{wheel_tag}"
+
+# CMake arguments
+cmake.args = ["-DBUILD_TESTING=OFF", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
+
+# Editable install mode - use symlinks for Python files, rebuild C++ on install
+editable.mode = "redirect"
+editable.rebuild = true
+
+# Specify which files to include in sdist
+sdist.include = [
+  "nvblox_torch/**/*.py",
+  "nvblox_torch/lib/**/*.so",
+  "cpp/**/*",
+  "CMakeLists.txt",
+  "../cmake/**/*",
+  "../nvblox/**/*",
+]
+
+[tool.scikit-build.cmake.define]
+BUILD_TESTING = "OFF"
+
+# Dynamic version using regex from _version.py
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "nvblox_torch/_version.py"
 
 [tool.pydocstyle]
 convention = "google"
 add-ignore = ["D100"]
 # NOTE(dtingdahl) files to check are specified in .pre-commit-config.yaml
+
+[tool.uv]
+no-build-isolation = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+  { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
