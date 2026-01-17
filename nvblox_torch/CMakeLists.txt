@@ -28,15 +28,35 @@ project(
 option(BUILD_TESTING "Build tests" OFF)
 option(NVBLOX_TORCH_STANDALONE "Build nvblox_torch standalone (find nvblox)" OFF)
 
-# This option avoids any implementations using std::string in their signature in
-# header files. Useful for Nvblox PyTorch wrapper, which requires the old
-# Pre-CXX11 ABI on x86
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-  option(PRE_CXX11_ABI_LINKABLE "Better support pre-C++11 ABI library users" ON)
-  message(STATUS "Building with pre-C++11 ABI support")
+# This option controls whether to use the old Pre-CXX11 ABI.
+# We detect PyTorch's ABI setting using Python (to avoid CMake side effects from find_package(Torch)).
+# PyTorch 2.0+ typically uses the new CXX11 ABI.
+find_package(Python COMPONENTS Interpreter QUIET)
+if(Python_FOUND)
+  execute_process(
+    COMMAND ${Python_EXECUTABLE} -c "import torch; print('1' if torch._C._GLIBCXX_USE_CXX11_ABI else '0')"
+    OUTPUT_VARIABLE PYTORCH_CXX11_ABI_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE PYTORCH_ABI_RESULT
+  )
+  if(PYTORCH_ABI_RESULT EQUAL 0)
+    if(PYTORCH_CXX11_ABI_OUTPUT STREQUAL "0")
+      set(PYTORCH_USES_OLD_ABI ON)
+    else()
+      set(PYTORCH_USES_OLD_ABI OFF)
+    endif()
+    option(PRE_CXX11_ABI_LINKABLE "Better support pre-C++11 ABI library users" ${PYTORCH_USES_OLD_ABI})
+    message(STATUS "Detected PyTorch CXX11 ABI: ${PYTORCH_CXX11_ABI_OUTPUT}, PRE_CXX11_ABI_LINKABLE=${PRE_CXX11_ABI_LINKABLE}")
+  else()
+    # PyTorch not importable, default to modern ABI
+    option(PRE_CXX11_ABI_LINKABLE "Better support pre-C++11 ABI library users" OFF)
+    message(STATUS "Could not detect PyTorch ABI, defaulting PRE_CXX11_ABI_LINKABLE=OFF")
+  endif()
 else()
+  # Python not found, default to modern ABI
   option(PRE_CXX11_ABI_LINKABLE "Better support pre-C++11 ABI library users" OFF)
-  message(STATUS "Building without pre-C++11 ABI support")
+  message(STATUS "Python not found, defaulting PRE_CXX11_ABI_LINKABLE=OFF")
 endif()
 
 # Include nvblox cmake helper functions from parent directory
