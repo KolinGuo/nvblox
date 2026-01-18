@@ -68,25 +68,19 @@ add_nvblox_shared_library(
   $<INSTALL_INTERFACE:include>
   ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
-# For in-place/editable builds, set output directory and copy libraries
-# This mirrors the wheel install structure where libraries go to:
-# - nvblox_torch/lib/cpp/libpy_nvblox.so
-# - nvblox_torch/lib/nvblox/libnvblox_lib.so
+# For in-place/editable builds, put both libraries in nvblox_torch/lib/
 if(DEFINED INPLACE_LIB_DIR)
   set_target_properties(py_nvblox PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${INPLACE_LIB_DIR}/cpp
-    # Set RPATH to find nvblox_lib in ../nvblox relative to lib/cpp/
-    BUILD_RPATH "$ORIGIN/../nvblox"
+    LIBRARY_OUTPUT_DIRECTORY ${INPLACE_LIB_DIR}
+    BUILD_RPATH "$ORIGIN"
   )
 
-  # Copy nvblox_lib to the expected location after build
+  # Copy nvblox_lib to the same directory after build
   add_custom_command(TARGET py_nvblox POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-      ${INPLACE_LIB_DIR}/nvblox
     COMMAND ${CMAKE_COMMAND} -E copy
       $<TARGET_FILE:nvblox_lib>
-      ${INPLACE_LIB_DIR}/nvblox/
-    COMMENT "Copying nvblox_lib to nvblox_torch/lib/nvblox/ for in-place builds"
+      ${INPLACE_LIB_DIR}/
+    COMMENT "Copying nvblox_lib to nvblox_torch/lib/ for in-place builds"
   )
 endif()
 

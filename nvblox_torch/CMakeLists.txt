@@ -96,35 +96,31 @@ else()
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../nvblox ${CMAKE_BINARY_DIR}/nvblox)
 endif()
 
+# For in-place/editable builds, set this BEFORE add_subdirectory(cpp)
+set(INPLACE_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nvblox_torch/lib CACHE PATH "In-place library directory")
+
 # Build the pytorch wrapper
 add_subdirectory(cpp)
 
 # Installation rules for scikit-build-core
 # The wheel.install-dir in pyproject.toml is set to "nvblox_torch/lib"
-# So CMake destinations are relative to that path in the final wheel.
+# Both libraries are installed to the same directory for simplicity:
+#   nvblox_torch/lib/libpy_nvblox.so
+#   nvblox_torch/lib/libnvblox_lib.so
 
-# Set install RPATH for py_nvblox to find nvblox_lib at runtime
-# The libraries are installed as:
-#   nvblox_torch/lib/cpp/libpy_nvblox.so
-#   nvblox_torch/lib/nvblox/libnvblox_lib.so
-# So the relative path from cpp/ to nvblox/ is ../nvblox
+# Set install RPATH for py_nvblox to find nvblox_lib in the same directory
 set_target_properties(py_nvblox PROPERTIES
-  INSTALL_RPATH "$ORIGIN/../nvblox"
+  INSTALL_RPATH "$ORIGIN"
   BUILD_WITH_INSTALL_RPATH FALSE
 )
 
-# Install py_nvblox library to cpp/ (becomes nvblox_torch/lib/cpp/ in wheel)
+# Install both libraries to the root of wheel.install-dir (nvblox_torch/lib/)
 install(TARGETS py_nvblox
-  LIBRARY DESTINATION cpp
-  RUNTIME DESTINATION cpp
+  LIBRARY DESTINATION .
+  RUNTIME DESTINATION .
 )
 
-# Install nvblox_lib to nvblox/ (becomes nvblox_torch/lib/nvblox/ in wheel)
 install(TARGETS nvblox_lib
-  LIBRARY DESTINATION nvblox
-  RUNTIME DESTINATION nvblox
+  LIBRARY DESTINATION .
+  RUNTIME DESTINATION .
 )
-
-# For in-place/editable builds, also copy libraries to source tree
-# This is done via a post-build step in cpp/CMakeLists.txt
-set(INPLACE_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nvblox_torch/lib CACHE PATH "In-place library directory")
