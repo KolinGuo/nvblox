@@ -16,28 +16,23 @@ if(DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES_SET_EXTERNALLY TRUE)
 else()
   set(CMAKE_CUDA_ARCHITECTURES_SET_EXTERNALLY FALSE)
-  # Try to detect torch's CUDA architectures to ensure ABI compatibility
-  # This is important because torch adds -gencode flags that affect Thrust namespacing
+  # Detect current GPU's architecture for faster local builds
   find_package(Python COMPONENTS Interpreter QUIET)
   if(Python_FOUND)
     execute_process(
       COMMAND ${Python_EXECUTABLE} -c "
 import torch
-# Get the minimum arch from torch's supported list to match its compile flags
-archs = torch.cuda.get_arch_list()
-# Extract numeric parts (e.g., 'sm_90' -> '90')
-nums = [int(a.replace('sm_', '').replace('compute_', '')) for a in archs if a.startswith('sm_')]
-if nums:
-    # Use the architectures that torch was compiled with
-    print(';'.join(str(n) for n in sorted(nums)))"
-      OUTPUT_VARIABLE TORCH_CUDA_ARCHS_OUTPUT
+if torch.cuda.is_available():
+    major, minor = torch.cuda.get_device_capability(0)
+    print(major * 10 + minor)"
+      OUTPUT_VARIABLE CURRENT_GPU_ARCH
       OUTPUT_STRIP_TRAILING_WHITESPACE
       ERROR_QUIET
-      RESULT_VARIABLE TORCH_ARCHS_RESULT
+      RESULT_VARIABLE GPU_ARCH_RESULT
     )
-    if(TORCH_ARCHS_RESULT EQUAL 0 AND TORCH_CUDA_ARCHS_OUTPUT)
-      message(STATUS "Detected torch CUDA architectures: ${TORCH_CUDA_ARCHS_OUTPUT}")
-      set(CMAKE_CUDA_ARCHITECTURES ${TORCH_CUDA_ARCHS_OUTPUT} CACHE STRING "CUDA architectures from torch" FORCE)
+    if(GPU_ARCH_RESULT EQUAL 0 AND CURRENT_GPU_ARCH)
+      message(STATUS "Detected current GPU architecture: sm_${CURRENT_GPU_ARCH}")
+      set(CMAKE_CUDA_ARCHITECTURES ${CURRENT_GPU_ARCH} CACHE STRING "Current GPU architecture" FORCE)
       set(CMAKE_CUDA_ARCHITECTURES_SET_EXTERNALLY TRUE)
     endif()
   endif()

@@ -5,10 +5,24 @@ services:
     extends:
       file: compose_base.yaml
       service: gpu-gui
+    command:
+      - >-
+        uv venv &&
+        uv pip install --group dev &&
+        uv sync -v &&
+        uv run pytest &&
+        /bin/bash
     working_dir: /workspace/nvblox_torch
     entrypoint: ["/bin/bash", "-c"]
     volumes:
-      - ".:/workspace"
+      - "./cmake:/workspace/cmake"
+      - "./nvblox:/workspace/nvblox"
+      - "./nvblox_torch/cpp:/workspace/nvblox_torch/cpp"
+      - "./nvblox_torch/nvblox_torch:/workspace/nvblox_torch/nvblox_torch"
+      - "./nvblox_torch/CMakeLists.txt:/workspace/nvblox_torch/CMakeLists.txt"
+      - "./nvblox_torch/pyproject.toml:/workspace/nvblox_torch/pyproject.toml"
+      - "./nvblox_torch/MANIFEST.in:/workspace/nvblox_torch/MANIFEST.in"
+      - "./nvblox_torch/setup.py:/workspace/nvblox_torch/setup.py"
     image: nvblox:build
     container_name: nvblox_build
     build:
