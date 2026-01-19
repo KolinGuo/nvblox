@@ -42,12 +42,32 @@ index 5857d6b..4aac3d2 100644
 --- a/cmake/cuda/determine_thrust_paths.cmake
 +++ b/cmake/cuda/determine_thrust_paths.cmake
 @@ -4,7 +4,8 @@ function(stdgpu_determine_thrust_paths STDGPU_OUTPUT_THRUST_PATHS)
- 
+
      find_package(CUDAToolkit QUIET)
- 
+
 -    set(${STDGPU_OUTPUT_THRUST_PATHS} "${CUDAToolkit_INCLUDE_DIRS}")
 +    # In CUDA13, torch includes are located under the cccl dir
 +    set(${STDGPU_OUTPUT_THRUST_PATHS} "${CUDAToolkit_INCLUDE_DIRS};${CUDAToolkit_INCLUDE_DIRS}/cccl")
- 
+
      # Make output variable visible
      set(${STDGPU_OUTPUT_THRUST_PATHS} ${${STDGPU_OUTPUT_THRUST_PATHS}} PARENT_SCOPE)
+diff --git a/src/stdgpu/impl/iterator_detail.h b/src/stdgpu/impl/iterator_detail.h
+index 1234567..abcdefg 100644
+--- a/src/stdgpu/impl/iterator_detail.h
++++ b/src/stdgpu/impl/iterator_detail.h
+@@ -380,6 +380,8 @@ inserter(Container& c)
+
+ } // namespace stdgpu
+
++// is_proxy_reference was removed in Thrust 3.x (CCCL), only define for older versions
++#if THRUST_VERSION < 300000
+ namespace thrust::detail
+ {
+
+@@ -398,5 +400,6 @@ struct is_proxy_reference<stdgpu::detail::insert_iterator_proxy<Container>> : pu
+ };
+
+ } // namespace thrust::detail
++#endif // THRUST_VERSION < 300000
+
+ #endif // STDGPU_ITERATORDETAIL_H
